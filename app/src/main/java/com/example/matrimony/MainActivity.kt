@@ -37,11 +37,14 @@ fun AppNavigation() {
             })
         }
         composable("create_profile_screen") {
-            CreateProfileScreen(onStartRegistrationClicked = { selectedRelation, selectedMotherTongue ->
-                println("Selected Relation: $selectedRelation, Mother Tongue: $selectedMotherTongue")
-                // Navigate to the next screen, passing this data if needed
-                // navController.navigate("next_screen/$selectedRelation/$selectedMotherTongue")
-            })
+            CreateProfileScreen(
+                onStartRegistrationClicked = { selectedRelation, selectedMotherTongue ->
+                    println("Selected Relation: $selectedRelation, Mother Tongue: $selectedMotherTongue")
+                    // Navigate to the next screen, passing this data if needed
+                    // navController.navigate("next_screen/$selectedRelation/$selectedMotherTongue")
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
         // You can define more routes here for other screens
     }
