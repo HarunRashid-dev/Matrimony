@@ -1,6 +1,5 @@
 package com.example.matrimony.ui.screens
 
-
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,9 +12,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-
 @Composable
-fun RegisterLoginScreen() {
+fun RegisterLoginScreen(onNavigateToCreateProfile: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -29,12 +27,10 @@ fun RegisterLoginScreen() {
             fontWeight = FontWeight.Bold
         )
 
-
         Spacer(modifier = Modifier.height(24.dp))
 
-
         Button(
-            onClick = { /* TODO: Navigate to Create Profile */ },
+            onClick = { onNavigateToCreateProfile() }, // Call the callback on button click
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722)),
             modifier = Modifier
                 .fillMaxWidth()
@@ -44,9 +40,7 @@ fun RegisterLoginScreen() {
             Text(text = "Create profile", color = Color.White)
         }
 
-
         Spacer(modifier = Modifier.height(16.dp))
-
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -57,16 +51,11 @@ fun RegisterLoginScreen() {
             Divider(modifier = Modifier.weight(1f), color = Color.Gray)
         }
 
-
         Spacer(modifier = Modifier.height(16.dp))
-
 
         Text(text = "Already registered?", color = Color.Black)
 
-
-        // ✅ Your update: spacing before login button
         Spacer(modifier = Modifier.height(16.dp))
-
 
         OutlinedButton(
             onClick = { /* TODO: Navigate to Login */ },
