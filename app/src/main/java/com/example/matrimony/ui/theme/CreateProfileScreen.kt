@@ -1,5 +1,3 @@
-package com.example.matrimony.ui.screens
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -8,14 +6,41 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.ExperimentalMaterial3Api
 
-// Define the orange color (you might want to put this in your colors.kt file)
-val Orange = Color(0xFFF27A35) // Replace with the exact hex code if needed
+// Define the orange color
+val Orange = Color(0xFFF27A35)
+val SelectedButtonColor = Color(0xFFDDEEFF) // A light blue color for selection, adjust as needed
 
+// List of Indian languages
+val indianLanguages = listOf(
+    "Assamese", "Bengali", "Bodo", "Dogri", "Gujarati", "Hindi", "Kannada",
+    "Kashmiri", "Konkani", "Maithili", "Malayalam", "Marathi", "Meitei (Manipuri)",
+    "Nepali", "Odia (Oriya)", "Punjabi", "Sanskrit", "Santali", "Sindhi",
+    "Tamil", "Telugu", "Urdu"
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateProfileScreen(onStartRegistrationClicked: (String) -> Unit) {
+fun CreateProfileScreen(onStartRegistrationClicked: (String, String) -> Unit) {
     var selectedRelation by remember { mutableStateOf("") }
+    var selectedMotherTongue by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
     val relations = listOf("Myself", "Son", "Daughter", "Brother", "Sister", "Friend", "Relative")
+
+    // Dynamically determine the label for Mother tongue
+    val motherTongueLabel = remember(selectedRelation) {
+        when (selectedRelation) {
+            "Myself" -> "Mother tongue"
+            "Son" -> "Son's mother tongue"
+            "Daughter" -> "Daughter's mother tongue"
+            "Brother" -> "Brother's mother tongue"
+            "Sister" -> "Sister's mother tongue"
+            "Friend" -> "Friend's mother tongue"
+            "Relative" -> "Relative's mother tongue"
+            else -> "Mother tongue" // Default label
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -29,7 +54,7 @@ fun CreateProfileScreen(onStartRegistrationClicked: (String) -> Unit) {
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Options arranged in a grid-like fashion
+        // Relation selection buttons
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             relations.chunked(2).forEach { rowRelations ->
                 Row(
@@ -38,19 +63,20 @@ fun CreateProfileScreen(onStartRegistrationClicked: (String) -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 ) {
                     rowRelations.forEach { relation ->
+                        val isSelected = selectedRelation == relation
                         OutlinedButton(
                             onClick = { selectedRelation = relation },
                             border = ButtonDefaults.outlinedButtonBorder,
                             shape = MaterialTheme.shapes.small,
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.onSurface
+                                contentColor = MaterialTheme.colorScheme.onSurface,
+                                containerColor = if (isSelected) SelectedButtonColor else Color.Transparent
                             ),
-                            modifier = Modifier.weight(1f) // Distribute space equally in the row
+                            modifier = Modifier.weight(1f)
                         ) {
                             Text(relation)
                         }
                     }
-                    // Add an empty Spacer if there's only one item in the row to keep alignment
                     if (rowRelations.size == 1) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
@@ -58,26 +84,59 @@ fun CreateProfileScreen(onStartRegistrationClicked: (String) -> Unit) {
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f)) // Push the button to the bottom
+        // Mother tongue dropdown (visible only if a relation is selected)
+        if (selectedRelation.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
+                OutlinedTextField(
+                    value = selectedMotherTongue,
+                    onValueChange = { /* Do nothing */ },
+                    label = { Text(motherTongueLabel) }, // Use the dynamic label
+                    readOnly = true,
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                        .menuAnchor(),
+                    colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                )
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    indianLanguages.forEach { language ->
+                        DropdownMenuItem(
+                            text = { Text(language) },
+                            onClick = {
+                                selectedMotherTongue = language
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
 
         Button(
             onClick = {
-                if (selectedRelation.isNotEmpty()) {
-                    onStartRegistrationClicked(selectedRelation)
-                    // You would typically navigate to the next step here
-                    println("Selected relation: $selectedRelation")
-                    // If you want to navigate from here, you'd need to pass the navController
-                    // down to this screen as well.
+                if (selectedRelation.isNotEmpty() && selectedMotherTongue.isNotEmpty()) {
+                    onStartRegistrationClicked(selectedRelation, selectedMotherTongue)
+                    println("Selected relation: $selectedRelation, Mother tongue: $selectedMotherTongue")
                 } else {
-                    // Optionally show an error message if no option is selected
-                    println("Please select a relation")
+                    println("Please select a relation and mother tongue")
                 }
             },
             modifier = Modifier.fillMaxWidth(),
-            enabled = selectedRelation.isNotEmpty(), // Enable the button only if a relation is selected
+            enabled = selectedRelation.isNotEmpty() && selectedMotherTongue.isNotEmpty(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = Orange,
-                contentColor = Color.White // Ensure the text color is readable on the orange background
+                contentColor = Color.White
             )
         ) {
             Text("Start Registration")
@@ -88,5 +147,5 @@ fun CreateProfileScreen(onStartRegistrationClicked: (String) -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun CreateProfileScreenPreview() {
-    CreateProfileScreen(onStartRegistrationClicked = {})
+    CreateProfileScreen(onStartRegistrationClicked = { _, _ -> })
 }
