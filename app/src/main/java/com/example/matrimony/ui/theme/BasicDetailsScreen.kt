@@ -1,5 +1,8 @@
 package com.example.matrimony.ui.theme
 
+import android.content.Context
+import android.util.Log
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -10,11 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.ui.tooling.preview.Preview
-import android.util.Log
-import androidx.activity.ComponentActivity
+import androidx.compose.ui.unit.dp
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
@@ -83,7 +83,10 @@ fun BasicDetailsScreen(
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
-        Text(text = "Your password must be within 8-20 characters", style = MaterialTheme.typography.bodySmall)
+        Text(
+            text = "Your password must be within 8-20 characters",
+            style = MaterialTheme.typography.bodySmall
+        )
         Spacer(modifier = Modifier.height(8.dp))
 
         Row(
@@ -91,7 +94,7 @@ fun BasicDetailsScreen(
         ) {
             OutlinedTextField(
                 value = selectedCountryCode,
-                onValueChange = { /* Do nothing - it's uneditable */ },
+                onValueChange = { /* Not editable */ },
                 readOnly = true,
                 label = { Text("Country Code") },
                 modifier = Modifier.weight(0.3f)
@@ -104,43 +107,66 @@ fun BasicDetailsScreen(
                 modifier = Modifier.weight(0.7f)
             )
         }
-        Text(text = "OTP will be sent to this number", style = MaterialTheme.typography.bodySmall)
+        Text(
+            text = "OTP will be sent to this number",
+            style = MaterialTheme.typography.bodySmall
+        )
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = {
                 val phoneNumber = selectedCountryCode + mobileNumber
-                val options = PhoneAuthOptions.newBuilder(auth)
-                    .setPhoneNumber(phoneNumber)
-                    .setTimeout(60L, TimeUnit.SECONDS)
-                    .setActivity(context as ComponentActivity)
-                    .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-                        override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                            Log.d("Firebase Auth", "onVerificationCompleted:$credential")
-                            navigateToOtpVerification(phoneNumber)
-                        }
+                val currentActivity = getActivity(context)
 
-                        override fun onVerificationFailed(e: FirebaseException) {
-                            Log.w("Firebase Auth", "onVerificationFailed", e)
-                            // TODO: Show an error message to the user
-                        }
+                if (currentActivity != null) {
+                    val options = PhoneAuthOptions.newBuilder(auth)
+                        .setPhoneNumber(phoneNumber)
+                        .setTimeout(60L, TimeUnit.SECONDS)
+                        .setActivity(currentActivity)
+                        .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                            override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                                Log.d("Firebase Auth", "onVerificationCompleted:$credential")
+                                navigateToOtpVerification(phoneNumber)
+                            }
 
-                        override fun onCodeSent(verificationId: String, token: PhoneAuthProvider.ForceResendingToken) {
-                            super.onCodeSent(verificationId, token)
-                            Log.d("Firebase Auth", "onCodeSent:$verificationId")
-                            updateVerificationId(verificationId)
-                            navigateToOtpVerification(phoneNumber)
-                            // TODO: Save token if needed for resending OTP
-                        }
-                    })
-                    .build()
-                PhoneAuthProvider.verifyPhoneNumber(options)
+                            override fun onVerificationFailed(e: FirebaseException) {
+                                Log.w("Firebase Auth", "onVerificationFailed", e)
+                                // TODO: Show error to user (Toast or Snackbar)
+                            }
+
+                            override fun onCodeSent(
+                                verificationId: String,
+                                token: PhoneAuthProvider.ForceResendingToken
+                            ) {
+                                super.onCodeSent(verificationId, token)
+                                Log.d("Firebase Auth", "onCodeSent:$verificationId")
+                                updateVerificationId(verificationId)
+                                navigateToOtpVerification(phoneNumber)
+                            }
+                        })
+                        .build()
+                    PhoneAuthProvider.verifyPhoneNumber(options)
+                } else {
+                    Log.e("Firebase Auth", "Activity is null, can't send OTP")
+                }
             },
             enabled = mobileNumber.isNotEmpty()
         ) {
             Text("Get OTP")
         }
     }
+}
+
+// Helper function to get Activity safely
+fun getActivity(context: Context?): ComponentActivity? {
+    var currentContext = context
+    while (currentContext is android.content.ContextWrapper) {
+        if (currentContext is ComponentActivity) {
+            return currentContext
+        }
+        currentContext = currentContext.baseContext
+    }
+    return null
 }
 
 @Preview(showBackground = true)
