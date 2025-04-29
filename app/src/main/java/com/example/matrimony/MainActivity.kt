@@ -58,9 +58,7 @@ fun AppNavigation(mainActivity: MainActivity) {
                     navController.navigate("basic_details_screen/$selectedRelation/$selectedMotherTongue")
                 },
                 onNavigateBack = { navController.popBackStack() },
-                navigateToOtpVerification = { phoneNumber ->
-                    navController.navigate("otp_verification_screen/$phoneNumber")
-                }
+                navigateToOtpVerification = { /* No longer used */ }
             )
         }
         composable(
@@ -76,10 +74,11 @@ fun AppNavigation(mainActivity: MainActivity) {
                 selectedRelation = selectedRelation,
                 selectedMotherTongue = selectedMotherTongue,
                 onNavigateBack = { navController.popBackStack() },
-                navigateToOtpVerification = { phoneNumber ->
-                    navController.navigate("otp_verification_screen/$phoneNumber")
-                },
-                updateVerificationId = mainActivity::updateVerificationId
+                onRegistrationSuccess = {
+                    navController.navigate("final_registration_screen") {
+                        popUpTo("create_profile_screen") { inclusive = true }
+                    }
+                }
             )
         }
         composable(

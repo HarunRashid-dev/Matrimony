@@ -1,8 +1,5 @@
 package com.example.matrimony.ui.theme
 
-import android.content.Context
-import android.util.Log
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -11,16 +8,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.google.firebase.FirebaseException
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.ui.tooling.preview.Preview
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.PhoneAuthCredential
-import com.google.firebase.auth.PhoneAuthOptions
-import com.google.firebase.auth.PhoneAuthProvider
-import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,16 +21,12 @@ fun BasicDetailsScreen(
     selectedRelation: String,
     selectedMotherTongue: String,
     onNavigateBack: () -> Unit,
-    navigateToOtpVerification: (String) -> Unit,
-    updateVerificationId: (String) -> Unit
+    onRegistrationSuccess: () -> Unit // Callback for successful email registration
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var mobileNumber by remember { mutableStateOf("") }
-    var selectedCountryCode by remember { mutableStateOf("+91") }
     val auth = FirebaseAuth.getInstance()
-    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -83,90 +72,45 @@ fun BasicDetailsScreen(
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
-        Text(
-            text = "Your password must be within 8-20 characters",
-            style = MaterialTheme.typography.bodySmall
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            OutlinedTextField(
-                value = selectedCountryCode,
-                onValueChange = { /* Not editable */ },
-                readOnly = true,
-                label = { Text("Country Code") },
-                modifier = Modifier.weight(0.3f)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            OutlinedTextField(
-                value = mobileNumber,
-                onValueChange = { mobileNumber = it },
-                label = { Text("Enter mobile number") },
-                modifier = Modifier.weight(0.7f)
-            )
-        }
-        Text(
-            text = "OTP will be sent to this number",
-            style = MaterialTheme.typography.bodySmall
-        )
+        Text(text = "Your password must be within 8-20 characters", style = MaterialTheme.typography.bodySmall)
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = {
-                val phoneNumber = selectedCountryCode + mobileNumber
-                val currentActivity = getActivity(context)
-
-                if (currentActivity != null) {
-                    val options = PhoneAuthOptions.newBuilder(auth)
-                        .setPhoneNumber(phoneNumber)
-                        .setTimeout(60L, TimeUnit.SECONDS)
-                        .setActivity(currentActivity)
-                        .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
-                            override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                                Log.d("Firebase Auth", "onVerificationCompleted:$credential")
-                                navigateToOtpVerification(phoneNumber)
+                if (email.isNotEmpty() && password.isNotEmpty()) {
+                    auth.createUserWithEmailAndPassword(email, password)
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                // Registration successful
+                                Log.d("Firebase Auth", "Email registration successful")
+                                val user = auth.currentUser
+                                user?.sendEmailVerification()
+                                    ?.addOnCompleteListener { sendTask ->
+                                        if (sendTask.isSuccessful) {
+                                            Log.d("Firebase Auth", "Verification email sent.")
+                                            // Inform user to check their email
+                                            // For now, let's just navigate to a success screen
+                                            onRegistrationSuccess()
+                                        } else {
+                                            Log.e("Firebase Auth", "Failed to send verification email.", sendTask.exception)
+                                            // Handle error sending verification email
+                                        }
+                                    }
+                            } else {
+                                // Registration failed
+                                Log.e("Firebase Auth", "Email registration failed.", task.exception)
+                                // Handle registration failure (e.g., email already in use)
                             }
-
-                            override fun onVerificationFailed(e: FirebaseException) {
-                                Log.w("Firebase Auth", "onVerificationFailed", e)
-                                // TODO: Show error to user (Toast or Snackbar)
-                            }
-
-                            override fun onCodeSent(
-                                verificationId: String,
-                                token: PhoneAuthProvider.ForceResendingToken
-                            ) {
-                                super.onCodeSent(verificationId, token)
-                                Log.d("Firebase Auth", "onCodeSent:$verificationId")
-                                updateVerificationId(verificationId)
-                                navigateToOtpVerification(phoneNumber)
-                            }
-                        })
-                        .build()
-                    PhoneAuthProvider.verifyPhoneNumber(options)
+                        }
                 } else {
-                    Log.e("Firebase Auth", "Activity is null, can't send OTP")
+                    // Optionally show an error message if email or password is empty
                 }
             },
-            enabled = mobileNumber.isNotEmpty()
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Get OTP")
+            Text("Register with Email")
         }
     }
-}
-
-// Helper function to get Activity safely
-fun getActivity(context: Context?): ComponentActivity? {
-    var currentContext = context
-    while (currentContext is android.content.ContextWrapper) {
-        if (currentContext is ComponentActivity) {
-            return currentContext
-        }
-        currentContext = currentContext.baseContext
-    }
-    return null
 }
 
 @Preview(showBackground = true)
@@ -176,7 +120,6 @@ fun BasicDetailsScreenPreview() {
         selectedRelation = "Relative",
         selectedMotherTongue = "Tamil",
         onNavigateBack = {},
-        navigateToOtpVerification = {},
-        updateVerificationId = {}
+        onRegistrationSuccess = {}
     )
 }
