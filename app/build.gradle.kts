@@ -67,5 +67,11 @@ dependencies {
         implementation(platform("com.google.firebase:firebase-bom:33.12.0")) // Or the latest BoM version
         implementation("com.google.firebase:firebase-auth")
 
+    implementation ("com.google.firebase:firebase-firestore-ktx:24.9.1")
+    implementation ("com.google.firebase:firebase-auth-ktx:22.3.1")
+
+    implementation ("com.google.firebase:firebase-firestore-ktx")
+
+    implementation("io.coil-kt:coil-compose:2.4.0")
 
 }

@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.ActionCodeSettings
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
 
@@ -29,18 +28,6 @@ fun RegisterLoginScreen(
     val auth = FirebaseAuth.getInstance()
     val context = LocalContext.current
 
-    // Configure ActionCodeSettings for email link
-    val actionCodeSettings = remember {
-        ActionCodeSettings.newBuilder()
-            .setAndroidPackageName(
-                context.packageName,
-                true, /* installIfNotAvailable */
-                null /* minimumPackageVersion */
-            )
-            .setHandleCodeInApp(true) // This must be set to true
-            .setUrl("https://example.firebaseapp.com/__/auth/action") // Replace with your Dynamic Link domain (or fallback URL)
-            .build()
-    }
 
     Column(
         modifier = Modifier
@@ -57,7 +44,7 @@ fun RegisterLoginScreen(
         )
 
         Button(
-            onClick = { onNavigateToCreateProfile() }, // Call the callback on button click
+            onClick = { onNavigateToCreateProfile() },
             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722)),
             modifier = Modifier
                 .fillMaxWidth()
@@ -101,13 +88,29 @@ fun RegisterLoginScreen(
                     auth.signInWithEmailAndPassword(emailLogin, passwordLogin)
                         .addOnCompleteListener { task ->
                             if (task.isSuccessful) {
-                                // Sign-in successful, navigate to home screen
-                                Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
-                                onNavigateToHomeScreen()
+                                val user = task.result?.user
+                                if (user?.isEmailVerified == true) {
+                                    Toast.makeText(context, "Login successful", Toast.LENGTH_SHORT).show()
+                                    onNavigateToHomeScreen()
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Please verify your email before logging in.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+
                             } else {
-                                // Sign-in failed, show error message
-                                Log.e("Firebase Auth", "Email/password sign-in failed", task.exception)
-                                Toast.makeText(context, "Login failed: ${task.exception?.localizedMessage}", Toast.LENGTH_LONG).show()
+                                Log.e(
+                                    "Firebase Auth",
+                                    "Email/password sign-in failed",
+                                    task.exception
+                                )
+                                Toast.makeText(
+                                    context,
+                                    "Login failed: ${task.exception?.localizedMessage}",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                         }
                 } else {
@@ -123,26 +126,6 @@ fun RegisterLoginScreen(
             Text(text = "Login", color = Color.White)
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
 
-        TextButton(onClick = {
-            if (emailLogin.isNotEmpty()) {
-                auth.sendSignInLinkToEmail(emailLogin, actionCodeSettings)
-                    .addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            Log.d("Firebase Auth", "Sign-in link sent to $emailLogin")
-                            Toast.makeText(context, "Sign-in link sent to $emailLogin. Check your email.", Toast.LENGTH_LONG).show()
-                            // You might want to store the email locally using SharedPreferences
-                        } else {
-                            Log.e("Firebase Auth", "Failed to send sign-in link", task.exception)
-                            Toast.makeText(context, "Failed to send link: ${task.exception?.localizedMessage}", Toast.LENGTH_LONG).show()
-                        }
-                    }
-            } else {
-                Toast.makeText(context, "Please enter your email for magic link login", Toast.LENGTH_SHORT).show()
-            }
-        }) {
-            Text("Login using mail verification", color = Color(0xFF673AB7))
-        }
     }
 }

@@ -27,6 +27,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 
+
 class MainActivity : ComponentActivity() {
     var verificationId: String by mutableStateOf("")
         private set
@@ -161,13 +162,8 @@ class MainActivity : ComponentActivity() {
                 Text("Final Registration Screen") // Replace with your actual final registration screen
             }
             composable("home_screen") {
-                Text("Home Screen") // Replace with your actual Home Screen composable
+                HomeScreen() // Call the HomeScreen Composable from the new file
             }
         }
     }
-}
-
-@Composable
-fun HomeScreen() {
-    Text("Welcome to the Home Screen!")
 }
